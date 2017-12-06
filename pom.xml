@@ -12,6 +12,7 @@
   <properties>
     <vertx.version>3.4.2</vertx.version>
     <main.verticle>io.vertx.starter.MainVerticle</main.verticle>
+    <fabric8-vertx-maven-plugin.version>1.0.13</fabric8-vertx-maven-plugin.version>
   </properties>
 
   <dependencyManagement>
@@ -101,6 +102,25 @@
           </arguments>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>io.fabric8</groupId>
+        <artifactId>vertx-maven-plugin</artifactId>
+        <version>${fabric8-vertx-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>vmp</id>
+            <goals>
+              <goal>initialize</goal>
+              <goal>package</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <redeploy>true</redeploy>
+        </configuration>
+      </plugin>
+      
     </plugins>
   </build>
 
