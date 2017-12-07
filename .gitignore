@@ -10,3 +10,4 @@ buildNumber.properties
 .idea
 .vertx
 *.iml
+db
