@@ -5,6 +5,8 @@ export VERTICLE="com.shenmao.vertx.starter.MainVerticle"
 export CMD="mvn compile"
 export VERTX_CMD="run"
 
+# java -cp $(echo target/dependency/*.jar | tr ' ' ':'):"target/classes" io.vertx.core.Launcher run com.shenmao.vertx.starter.MainVerticle
+
 mvn compile dependency:copy-dependencies
 java \
   -cp  $(echo target/dependency/*.jar | tr ' ' ':'):"target/classes" \
