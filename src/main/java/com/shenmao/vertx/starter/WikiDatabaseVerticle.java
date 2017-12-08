@@ -370,7 +370,8 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
       .put("max_pool_size", config().getInteger(CONFIG_WIKIDB_JDBC_MAX_POOL_SIZE, 30)));
 
 
-    Future<Void> steps = dropTable("Pages").compose(v -> createTable())
+    Future<Void> steps = //dropTable("Pages").compose(v -> createTable())
+    createTable()
       .compose(v ->pourData("The title for first page.", null))
       .compose(v -> pourData("The title for second page.", null))
       .compose(v -> pourData("The title for three page.", null))
