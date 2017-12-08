@@ -30,7 +30,7 @@ if [ ${#v} -ge 1 ]; then VERSION=$v;
 fi
 
 echo "Cloning project"
-git clone git@github.com:chunhui2001/vertx-maven-starter.git ${PROJECT_NAME}
+git clone -b v0.1.vertx-starter-normal git@github.com:chunhui2001/vertx-maven-starter.git ${PROJECT_NAME}
 
 echo "Generating project"
 rm -Rf ${PROJECT_NAME}/.git
