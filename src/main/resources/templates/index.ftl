@@ -31,7 +31,7 @@
         </#items>
       </ul>
       <#else>
-      <p>The wiki is currently empty!</p>
+      <p style="color: darkorchid">The wiki is currently empty!</p>
     </#list>
 
   </div>

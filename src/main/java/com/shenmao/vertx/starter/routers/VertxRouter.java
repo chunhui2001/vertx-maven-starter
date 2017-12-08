@@ -1,30 +1,29 @@
 package com.shenmao.vertx.starter.routers;
 
-import com.shenmao.vertx.starter.actions.GlobalAction;
-import io.vertx.core.Vertx;
+import com.shenmao.vertx.starter.actions.Action;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 
 public class VertxRouter {
 
-  GlobalAction _globalAction;
+  Action _action;
 
-  public VertxRouter (Vertx vertx) {
-    _globalAction = new GlobalAction(vertx);
+  public VertxRouter (Action action) {
+    _action = action;
   }
 
-  public Router getRouter(Vertx vertx) {
+  public Router getRouter() {
 
-    Router router = Router.router(vertx);
+    Router router = Router.router(_action.getVertx());
 
-    router.get("/static/*").handler(_globalAction::staticHandler);
+    router.get("/static/*").handler(_action::staticHandler);
 
-    router.get("/").handler(_globalAction::indexHandler);
-    router.get("/wiki/:id").handler(_globalAction::pageRenderingHandler);
+    router.get("/").handler(_action::indexHandler);
+    router.get("/wiki/:id").handler(_action::pageRenderingHandler);
     router.post().handler(BodyHandler.create());
-    router.post("/save").handler(_globalAction::pageUpdateHandler);
-    router.post("/create").handler(_globalAction::pageCreateHandler);
-    router.post("/delete").handler(_globalAction::pageDeletionHandler);
+    router.post("/save").handler(_action::pageUpdateHandler);
+    router.post("/create").handler(_action::pageCreateHandler);
+    router.post("/delete").handler(_action::pageDeletionHandler);
 
     return router;
 
