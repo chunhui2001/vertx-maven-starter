@@ -183,12 +183,9 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
 
   public void fetchLastIncrementId(Handler<List<JsonArray>> done) {
 
-    Future<List<JsonArray>> future = Future.future();
-
     _dbClient.query(sqlQueries.get(SqlQuery.LAST_INSERT_ID), res -> {
 
       if (res.succeeded()) {
-        future.complete(res.result().getResults());
         done.handle(res.result().getResults());
       } else {
         done.handle(null);
@@ -203,13 +200,14 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
     JsonObject request = message.body();
 
     JsonArray data = new JsonArray()
+      .add(request.getString("title"))
       .add(request.getString("markdown"))
       .add(request.getString("id"));
 
     _dbClient.updateWithParams(sqlQueries.get(SqlQuery.SAVE_PAGE), data, res -> {
 
       if (res.succeeded()) {
-        message.reply("ok");
+        message.reply(res.result().getUpdated() > 0 ? "ok" : "no");
       } else {
         reportQueryError(message, res.cause());
       }
@@ -219,15 +217,17 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
   }
 
   public void deletePage(Message<JsonObject> message) {
+
     JsonArray data = new JsonArray().add(message.body().getString("id"));
 
     _dbClient.updateWithParams(sqlQueries.get(SqlQuery.DELETE_PAGE), data, res -> {
       if (res.succeeded()) {
-        message.reply("ok");
+        message.reply(res.result().getUpdated() > 0 ? "ok" : "no");
       } else {
         reportQueryError(message, res.cause());
       }
     });
+
   }
 
   private void reportQueryError(Message<JsonObject> message, Throwable cause) {
@@ -372,11 +372,11 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
 
     Future<Void> steps = //dropTable("Pages").compose(v -> createTable())
     createTable()
-      .compose(v ->pourData("The title for first page.", null))
+      .compose(v -> pourData("The title for first page.", null))
       .compose(v -> pourData("The title for second page.", null))
-      .compose(v -> pourData("The title for three page.", null))
-      .compose(v -> pourData("The title for four page.", null))
-      .compose(v -> pourData("The title for five page.", null))
+      //.compose(v -> pourData("The title for three page.", null))
+      //.compose(v -> pourData("The title for four page.", null))
+     // .compose(v -> pourData("The title for five page.", null))
       ;
 
     steps.setHandler(ar -> {

@@ -1,11 +1,11 @@
 package com.shenmao.vertx.starter.actions;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.rjeschke.txtmark.Processor;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.templ.FreeMarkerTemplateEngine;
 
@@ -15,6 +15,7 @@ import static com.shenmao.vertx.starter.WikiDatabaseVerticle.EMPTY_PAGE_MARKDOWN
 
 public class DefaultAction implements Action {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAction.class);
   private final FreeMarkerTemplateEngine templateEngine = FreeMarkerTemplateEngine.create();
   private String wikiDbQueue = "wikidb.queue";
 
@@ -62,7 +63,7 @@ public class DefaultAction implements Action {
     String _page_id = context.request().getParam("id");
     String _new_page = context.request().getParam("newPage");
 
-    JsonObject _params = new JsonObject()
+      JsonObject _params = new JsonObject()
       .put("id", _page_id == null || _page_id.isEmpty() ? -1 : _page_id)
       .put("title", context.request().getParam("title"))
       .put("markdown", context.request().getParam("markdown"));
@@ -78,9 +79,9 @@ public class DefaultAction implements Action {
     _vertx.eventBus().send(wikiDbQueue, _params, options, reply -> {
 
       if (reply.succeeded()) {
-        context.response().setStatusCode(303);
+        context.response().setStatusCode(reply.result().body().toString().equals("ok") ? 301 : 400);
         context.response().putHeader("Location", "/wiki/" + _page_id);
-        context.response().end();
+        context.response().end(_page_id);
 
       } else {
           context.fail(reply.cause());
@@ -100,9 +101,9 @@ public class DefaultAction implements Action {
     _vertx.eventBus().send(wikiDbQueue, request, options, reply -> {
 
       if (reply.succeeded()) {
-        context.response().setStatusCode(303);
+        context.response().setStatusCode(reply.result().body().toString().equals("ok") ? 301 : 400);
         context.response().putHeader("Location", "/");
-        context.response().end();
+        context.response().end(id);
       } else {
         context.fail(reply.cause());
       }
@@ -115,9 +116,9 @@ public class DefaultAction implements Action {
   public void pageCreateHandler(RoutingContext context) {
 
     String pageName = context.request().getParam("name");
-    context.response().setStatusCode(303);
 
     if (pageName == null || pageName.isEmpty()) {
+      context.response().setStatusCode(400);
       context.response().putHeader("Location", "/");
       context.response().end();
     } else {
@@ -126,16 +127,20 @@ public class DefaultAction implements Action {
 
       _vertx.eventBus().send(wikiDbQueue, _data, new DeliveryOptions().addHeader("action", "create-page"), reply -> {
 
+        Long newPageId = -1L;
+
         if (reply.succeeded()) {
 
           if (reply.result().body() == null) {
             context.response().putHeader("Location", "/");
           } else {
-            Long newPageId = (long) reply.result().body();
+            newPageId = (long) reply.result().body();
             context.response().putHeader("Location", "/wiki/" + newPageId);
           }
 
-          context.response().end();
+          context.response().setStatusCode(301);
+
+          context.response().end(newPageId + "");
 
         } else {
           context.fail(reply.cause());
@@ -169,10 +174,15 @@ public class DefaultAction implements Action {
           context.put("content", Processor.process(rawContent));
           context.put("rawContent", rawContent);
         } else {
-          context.put("id", -1);
-          context.put("title", "");
-          context.put("content", Processor.process(EMPTY_PAGE_MARKDOWN));
-          context.put("rawContent", EMPTY_PAGE_MARKDOWN);
+
+//          context.put("id", -1);
+//          context.put("title", "");
+//          context.put("content", Processor.process(EMPTY_PAGE_MARKDOWN));
+//          context.put("rawContent", EMPTY_PAGE_MARKDOWN);
+
+          context.response().setStatusCode(404);
+          context.response().end();
+          return;
         }
 
         context.put("newPage", found ? "no" : "yes");

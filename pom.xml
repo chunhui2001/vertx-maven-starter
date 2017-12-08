@@ -78,6 +78,21 @@
       <version>2.3.4</version>
     </dependency>
 
+
+    <!-- apache httpclient -->
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.5.4</version>
+    </dependency>
+
+    <!-- apache commons-io -->
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.6</version>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -90,6 +105,9 @@
             <source>1.8</source>
             <target>1.8</target>
             <encoding>${project.build.sourceEncoding}</encoding>
+            <compilerArgs>
+              <!--<arg>-Xlint:deprecation</arg>-->
+            </compilerArgs>
           </configuration>
         </plugin>
       </plugins>
