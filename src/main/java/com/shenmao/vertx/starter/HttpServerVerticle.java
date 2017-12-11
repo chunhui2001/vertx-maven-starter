@@ -1,6 +1,7 @@
 package com.shenmao.vertx.starter;
 
 import com.shenmao.vertx.starter.actions.DefaultAction;
+import com.shenmao.vertx.starter.configuration.ApplicationConfig;
 import com.shenmao.vertx.starter.routers.VertxRouter;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -26,7 +27,7 @@ public class HttpServerVerticle extends AbstractVerticle {
 
     Router router = new VertxRouter(new DefaultAction(vertx)).getRouter();
 
-    int portNumber = config().getInteger(CONFIG_HTTP_SERVER_PORT, 9180);
+    int portNumber = Integer.parseInt(Application.getAppConfig().get(ApplicationConfig.AppConfig.APP_PORT));
 
     server
       .requestHandler(router::accept)
