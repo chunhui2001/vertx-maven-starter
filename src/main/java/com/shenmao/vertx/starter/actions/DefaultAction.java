@@ -1,6 +1,7 @@
 package com.shenmao.vertx.starter.actions;
 
 import com.github.rjeschke.txtmark.Processor;
+import com.shenmao.vertx.starter.WikiDatabaseVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.JsonObject;
@@ -17,7 +18,7 @@ public class DefaultAction implements Action {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAction.class);
   private final FreeMarkerTemplateEngine templateEngine = FreeMarkerTemplateEngine.create();
-  private String wikiDbQueue = "wikidb.queue";
+  private String wikiDbQueue = WikiDatabaseVerticle.CONFIG_WIKIDB_QUEUE;
 
   private Vertx _vertx;
 

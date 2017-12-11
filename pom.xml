@@ -93,6 +93,13 @@
       <version>2.6</version>
     </dependency>
 
+    <!-- Selenide -->
+    <dependency>
+      <groupId>com.codeborne</groupId>
+      <artifactId>selenide</artifactId>
+      <version>4.8</version>
+    </dependency>
+
   </dependencies>
 
   <build>

@@ -1,7 +1,6 @@
 package com.shenmao.vertx.starter;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shenmao.vertx.starter.configuration.SqlQueriesConfig;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -14,12 +13,10 @@ import io.vertx.ext.jdbc.JDBCClient;
 import io.vertx.ext.sql.ResultSet;
 import io.vertx.ext.sql.SQLConnection;
 
-import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Properties;
 
 public class WikiDatabaseVerticle extends AbstractVerticle {
 
@@ -29,18 +26,7 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
     DB_ERROR
   }
 
-  public enum SqlQuery {
-    DROP_TABLE,
-    CREATE_PAGES_TABLE,
-    ALL_PAGES,
-    GET_PAGE,
-    CREATE_PAGE,
-    SAVE_PAGE,
-    DELETE_PAGE,
-    LAST_INSERT_ID
-  }
-
-  private final HashMap<SqlQuery, String> sqlQueries = new HashMap<>();
+  private HashMap<SqlQueriesConfig.SqlQuery, String> sqlQueries = Application.getSqlQueriesConfig();
   private static final Logger LOGGER = LoggerFactory.getLogger(WikiDatabaseVerticle.class);
 
   public static final String CONFIG_WIKIDB_JDBC_URL = "wikidb.jdbc.url";
@@ -55,44 +41,9 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
 
   private JDBCClient _dbClient;
 
-  private void loadSqlQueries() {
-
-    String queriesFile = config().getString(CONFIG_WIKIDB_SQL_QUERIES_RESOURCE_FILE);
-
-    InputStream queriesInputStream = null;
-
-    Properties queriesProps = new Properties();
-
-    try {
-
-      if (queriesFile == null) {
-        queriesInputStream = getClass().getResourceAsStream("/properties/db-queries.properties");
-      } else {
-
-          queriesInputStream = new FileInputStream(queriesFile);
-
-      }
-
-      queriesProps.load(queriesInputStream);
-      queriesInputStream.close();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-
-    sqlQueries.put(SqlQuery.DROP_TABLE, queriesProps.getProperty("drop-table"));
-    sqlQueries.put(SqlQuery.CREATE_PAGES_TABLE, queriesProps.getProperty("create-pages-table"));
-    sqlQueries.put(SqlQuery.ALL_PAGES, queriesProps.getProperty("all-pages"));
-    sqlQueries.put(SqlQuery.GET_PAGE, queriesProps.getProperty("get-page"));
-    sqlQueries.put(SqlQuery.CREATE_PAGE, queriesProps.getProperty("create-page"));
-    sqlQueries.put(SqlQuery.SAVE_PAGE, queriesProps.getProperty("save-page"));
-    sqlQueries.put(SqlQuery.DELETE_PAGE, queriesProps.getProperty("delete-page"));
-    sqlQueries.put(SqlQuery.LAST_INSERT_ID, queriesProps.getProperty("get-last-increment-id"));
-
-  }
-
   public void fetchAllPages(Message<JsonObject> message) {
 
-    _dbClient.query(sqlQueries.get(SqlQuery.ALL_PAGES), res -> {
+    _dbClient.query(sqlQueries.get(SqlQueriesConfig.SqlQuery.ALL_PAGES), res -> {
 
       if (res.succeeded()) {
 
@@ -118,7 +69,7 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
     final String _page_id = message.body().getString("id");
     JsonArray params = new JsonArray().add(_page_id);
 
-    _dbClient.queryWithParams(sqlQueries.get(SqlQuery.GET_PAGE), params, fetch -> {
+    _dbClient.queryWithParams(sqlQueries.get(SqlQueriesConfig.SqlQuery.GET_PAGE), params, fetch -> {
 
       if (fetch.succeeded()) {
 
@@ -156,7 +107,7 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
       .add(request.getString("title"))
       .add(request.getString("markdown"));
 
-    _dbClient.updateWithParams(sqlQueries.get(SqlQuery.CREATE_PAGE), _data, res -> {
+    _dbClient.updateWithParams(sqlQueries.get(SqlQueriesConfig.SqlQuery.CREATE_PAGE), _data, res -> {
 
       if (res.succeeded()) {
 
@@ -183,7 +134,7 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
 
   public void fetchLastIncrementId(Handler<List<JsonArray>> done) {
 
-    _dbClient.query(sqlQueries.get(SqlQuery.LAST_INSERT_ID), res -> {
+    _dbClient.query(sqlQueries.get(SqlQueriesConfig.SqlQuery.LAST_INSERT_ID), res -> {
 
       if (res.succeeded()) {
         done.handle(res.result().getResults());
@@ -204,7 +155,7 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
       .add(request.getString("markdown"))
       .add(request.getString("id"));
 
-    _dbClient.updateWithParams(sqlQueries.get(SqlQuery.SAVE_PAGE), data, res -> {
+    _dbClient.updateWithParams(sqlQueries.get(SqlQueriesConfig.SqlQuery.SAVE_PAGE), data, res -> {
 
       if (res.succeeded()) {
         message.reply(res.result().getUpdated() > 0 ? "ok" : "no");
@@ -220,7 +171,7 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
 
     JsonArray data = new JsonArray().add(message.body().getString("id"));
 
-    _dbClient.updateWithParams(sqlQueries.get(SqlQuery.DELETE_PAGE), data, res -> {
+    _dbClient.updateWithParams(sqlQueries.get(SqlQueriesConfig.SqlQuery.DELETE_PAGE), data, res -> {
       if (res.succeeded()) {
         message.reply(res.result().getUpdated() > 0 ? "ok" : "no");
       } else {
@@ -261,7 +212,7 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
           if (markdown == null)
             params.add(EMPTY_PAGE_MARKDOWN);
 
-          connection.updateWithParams(sqlQueries.get(SqlQuery.CREATE_PAGE), params, res -> {
+          connection.updateWithParams(sqlQueries.get(SqlQueriesConfig.SqlQuery.CREATE_PAGE), params, res -> {
 
             connection.close();
             if (res.failed()) {
@@ -286,7 +237,7 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
 
     Future<Void> future = Future.future();
 
-    _dbClient.query(sqlQueries.get(SqlQuery.DROP_TABLE) + " " + tableName, drop -> {
+    _dbClient.query(sqlQueries.get(SqlQueriesConfig.SqlQuery.DROP_TABLE) + " " + tableName, drop -> {
       if (drop.failed()) {
         LOGGER.error("Drop table error##WikiDatabaseVerticle.prepareDatabase", drop.cause());
         future.fail(drop.cause());
@@ -303,7 +254,7 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
 
     Future<Void> future = Future.future();
 
-    _dbClient.query(sqlQueries.get(SqlQuery.CREATE_PAGES_TABLE), create -> {
+    _dbClient.query(sqlQueries.get(SqlQueriesConfig.SqlQuery.CREATE_PAGES_TABLE), create -> {
       if (create.failed()) {
         LOGGER.error("Database preparation error##WikiDatabaseVerticle.prepareDatabase", create.cause());
         future.fail(create.cause());
@@ -362,8 +313,6 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
   public void start(Future<Void> startFuture) throws IOException {
 
 
-    loadSqlQueries();
-
     _dbClient = JDBCClient.createShared(vertx, new JsonObject()
       .put("url", config().getString(CONFIG_WIKIDB_JDBC_URL, "jdbc:hsqldb:file:db/wiki"))
       .put("driver_class", config().getString(CONFIG_WIKIDB_JDBC_DRIVER_CLASS, "org.hsqldb.jdbcDriver"))
@@ -381,7 +330,7 @@ public class WikiDatabaseVerticle extends AbstractVerticle {
 
     steps.setHandler(ar -> {
       if (ar.succeeded()) {
-        vertx.eventBus().consumer("wikidb.queue", this::onMessage);
+        vertx.eventBus().consumer(CONFIG_WIKIDB_QUEUE, this::onMessage);
         startFuture.complete();
       } else {
         startFuture.fail(ar.cause());
