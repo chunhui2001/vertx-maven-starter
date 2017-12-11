@@ -2,6 +2,7 @@ package com.shenmao.vertx.starter;
 
 import com.shenmao.vertx.starter.configuration.ApplicationConfig;
 import com.shenmao.vertx.starter.configuration.SqlQueriesConfig;
+import com.shenmao.vertx.starter.database.WikiDatabaseVerticle;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
@@ -29,7 +30,7 @@ public class MainVerticle extends AbstractVerticle {
       Future<String> httpVerticleDeployment = Future.future();
 
       vertx.deployVerticle(
-          "com.shenmao.vertx.starter.HttpServerVerticle",
+          "com.shenmao.vertx.starter.http.HttpServerVerticle",
           new DeploymentOptions().setInstances(2),
           httpVerticleDeployment.completer()
       );

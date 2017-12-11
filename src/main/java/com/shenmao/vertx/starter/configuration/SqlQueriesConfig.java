@@ -1,6 +1,6 @@
 package com.shenmao.vertx.starter.configuration;
 
-import com.shenmao.vertx.starter.WikiDatabaseVerticle;
+import com.shenmao.vertx.starter.database.WikiDatabaseVerticle;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

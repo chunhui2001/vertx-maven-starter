@@ -1,9 +1,13 @@
 package com.shenmao.vertx.starter.actions;
 
 import com.github.rjeschke.txtmark.Processor;
-import com.shenmao.vertx.starter.WikiDatabaseVerticle;
+import com.shenmao.vertx.starter.database.WikiDatabaseService;
+import com.shenmao.vertx.starter.database.WikiDatabaseVerticle;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.DeliveryOptions;
+import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -12,7 +16,7 @@ import io.vertx.ext.web.templ.FreeMarkerTemplateEngine;
 
 import java.util.Date;
 
-import static com.shenmao.vertx.starter.WikiDatabaseVerticle.EMPTY_PAGE_MARKDOWN;
+import static com.shenmao.vertx.starter.database.WikiDatabaseVerticle.EMPTY_PAGE_MARKDOWN;
 
 public class DefaultAction implements Action {
 
@@ -20,41 +24,43 @@ public class DefaultAction implements Action {
   private final FreeMarkerTemplateEngine templateEngine = FreeMarkerTemplateEngine.create();
   private String wikiDbQueue = WikiDatabaseVerticle.CONFIG_WIKIDB_QUEUE;
 
+
+  private WikiDatabaseService dbService;
+
   private Vertx _vertx;
 
   public DefaultAction(Vertx vertx) {
     _vertx = vertx;
+    dbService = WikiDatabaseService.createProxy(vertx, wikiDbQueue);
   }
 
   @Override
   public void indexHandler(RoutingContext context) {
 
-    DeliveryOptions options = new DeliveryOptions().addHeader("action", "all-pages");
-
-    _vertx.eventBus().send(wikiDbQueue, new JsonObject(), options, reply -> {
+    dbService.fetchAllPages(reply -> {
 
       if (reply.succeeded()) {
 
-        JsonObject body = (JsonObject) reply.result().body();
-        context.put("title", "Wiki home");
-        context.put("pages", body.getJsonArray("pages").getList());
+        context.put("title", "Wiki Home 2");
+        context.put("pages", reply.result());
 
         templateEngine.render(context, "templates", "/index.ftl", ar -> {
 
           if (ar.succeeded()) {
             context.response().putHeader("Content-Type", "text/html");
-          context.response().end(ar.result());
-          } else { context.fail(ar.cause());
+            context.response().end(ar.result());
+          } else {
+            context.fail(ar.cause());
           }
 
         });
 
       } else {
-
-          context.fail(reply.cause());
+        context.fail(reply.cause());
       }
 
     });
+
 
   }
 
@@ -69,42 +75,66 @@ public class DefaultAction implements Action {
       .put("title", context.request().getParam("title"))
       .put("markdown", context.request().getParam("markdown"));
 
-    DeliveryOptions options = new DeliveryOptions();
 
-    if ("yes".equals(_new_page)) {
-      options.addHeader("action", "create-page");
-    } else {
-      options.addHeader("action", "save-page");
-    }
-
-    _vertx.eventBus().send(wikiDbQueue, _params, options, reply -> {
+    Handler<AsyncResult<Long>> createHandler = reply -> {
 
       if (reply.succeeded()) {
-        context.response().setStatusCode(reply.result().body().toString().equals("ok") ? 301 : 400);
-        context.response().putHeader("Location", "/wiki/" + _page_id);
-        context.response().end(_page_id);
+
+        if (reply.result() == null || reply.result() == -1L) {
+          context.response().setStatusCode(400);
+          // TODO should be going to error page
+          //context.response().putHeader("Location", "/wiki/" + reply.result());
+        } else {
+          context.response().setStatusCode(301);
+          context.response().putHeader("Location", "/wiki/" + reply.result());
+        }
+
+        context.response().end();
 
       } else {
-          context.fail(reply.cause());
+        context.fail(reply.cause());
       }
 
-    });
+    };
+
+    Handler<AsyncResult<Void>> updateHandler = reply -> {
+
+      if (reply.succeeded()) {
+
+        context.response().setStatusCode(301);
+        context.response().putHeader("Location", "/wiki/" + _page_id);
+
+        context.response().end();
+
+      } else {
+        context.fail(reply.cause());
+      }
+
+    };
+
+
+    if ("yes".equals(_new_page)) {
+      dbService.createPage(context.request().getParam("title"), context.request().getParam("markdown"), createHandler);
+    } else {
+      dbService.savePage(Long.parseLong(_page_id), context.request().getParam("title"), context.request().getParam("markdown"), updateHandler);
+    }
+
 
   }
 
   @Override
   public void pageDeletionHandler(RoutingContext context) {
 
-    String id = context.request().getParam("id");
+    Long id = Long.parseLong(context.request().getParam("id"));
     JsonObject request = new JsonObject().put("id", id);
     DeliveryOptions options = new DeliveryOptions().addHeader("action", "delete-page");
 
-    _vertx.eventBus().send(wikiDbQueue, request, options, reply -> {
+    dbService.deletePage(id, reply -> {
 
       if (reply.succeeded()) {
-        context.response().setStatusCode(reply.result().body().toString().equals("ok") ? 301 : 400);
+        context.response().setStatusCode( 301 );
         context.response().putHeader("Location", "/");
-        context.response().end(id);
+        context.response().end(id + "");
       } else {
         context.fail(reply.cause());
       }
@@ -124,18 +154,16 @@ public class DefaultAction implements Action {
       context.response().end();
     } else {
 
-      JsonObject _data = new JsonObject().put("title", pageName).put("markdown", EMPTY_PAGE_MARKDOWN);
-
-      _vertx.eventBus().send(wikiDbQueue, _data, new DeliveryOptions().addHeader("action", "create-page"), reply -> {
+      dbService.createPage(pageName, EMPTY_PAGE_MARKDOWN, reply -> {
 
         Long newPageId = -1L;
 
         if (reply.succeeded()) {
 
-          if (reply.result().body() == null) {
+          if (reply.result() == null) {
             context.response().putHeader("Location", "/");
           } else {
-            newPageId = (long) reply.result().body();
+            newPageId = (long) reply.result();
             context.response().putHeader("Location", "/wiki/" + newPageId);
           }
 
@@ -156,15 +184,13 @@ public class DefaultAction implements Action {
   @Override
   public void pageRenderingHandler(RoutingContext context) {
 
-    String _page_id = context.request().getParam("id");
-    JsonObject _data = new JsonObject().put("id", _page_id);
-    DeliveryOptions options = new DeliveryOptions().addHeader("action", "get-page");
+    long _page_id = Long.parseLong(context.request().getParam("id"));
 
-    _vertx.eventBus().send(wikiDbQueue, _data, options, reply -> {
+    dbService.fetchPage(_page_id, reply -> {
 
       if (reply.succeeded()) {
 
-        JsonObject body = (JsonObject) reply.result().body();
+        JsonObject body = reply.result();
 
         boolean found = body.getBoolean("found");
         String rawContent = body.getString("rawContent", EMPTY_PAGE_MARKDOWN);
@@ -203,6 +229,7 @@ public class DefaultAction implements Action {
       } else {
         context.fail(reply.cause());
       }
+
 
     });
 
