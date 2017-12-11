@@ -18,7 +18,8 @@ public class SqlQueriesConfig {
     CREATE_PAGE,
     SAVE_PAGE,
     DELETE_PAGE,
-    LAST_INSERT_ID
+    LAST_INSERT_ID,
+    ALL_PAGES_DATA
   }
 
   private static String _config_file = null;
@@ -74,6 +75,8 @@ public class SqlQueriesConfig {
     sqlQueries.put(SqlQuery.SAVE_PAGE, queriesProps.getProperty("save-page"));
     sqlQueries.put(SqlQuery.DELETE_PAGE, queriesProps.getProperty("delete-page"));
     sqlQueries.put(SqlQuery.LAST_INSERT_ID, queriesProps.getProperty("get-last-increment-id"));
+
+    sqlQueries.put(SqlQuery.ALL_PAGES_DATA, queriesProps.getProperty("all-pages-data"));
 
   }
 

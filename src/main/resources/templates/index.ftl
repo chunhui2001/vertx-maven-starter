@@ -34,6 +34,17 @@
       <p style="color: darkorchid">The wiki is currently empty!</p>
     </#list>
 
+      <a ="submit" href="/backup" class="btn btn-info">Gist Backup</a>
+
+    <div style="padding: 1em;
+    margin-top: 1em;
+    background-color: burlywood;">
+      <p style="margin-bottom: .3em;color: brown;">Successfully creatd a backup:</p>
+      <a href="https://gist.github.com/58abd4dc8636685140b4ec2e174295f1 " target="_blank">
+        https://gist.github.com/58abd4dc8636685140b4ec2e174295f1
+      </a>
+    </div>
+
   </div>
 
   </div>

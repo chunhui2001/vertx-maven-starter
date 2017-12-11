@@ -127,6 +127,10 @@ public class WikiDatabaseServiceVertxProxyHandler extends ProxyHandler {
           service.fetchAllPages(createListHandler(msg));
           break;
         }
+        case "fetchAllPagesData": {
+          service.fetchAllPagesData(createListHandler(msg));
+          break;
+        }
         case "fetchPage": {
           service.fetchPage(json.getValue("id") == null ? null : (json.getLong("id").longValue()), createHandler(msg));
           break;

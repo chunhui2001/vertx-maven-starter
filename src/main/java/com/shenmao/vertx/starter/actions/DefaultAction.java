@@ -12,6 +12,10 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.ext.web.templ.FreeMarkerTemplateEngine;
 
 import java.util.Date;
@@ -41,19 +45,10 @@ public class DefaultAction implements Action {
 
       if (reply.succeeded()) {
 
-        context.put("title", "Wiki Home 2");
+        context.put("title", "Wiki Home");
         context.put("pages", reply.result());
 
-        templateEngine.render(context, "templates", "/index.ftl", ar -> {
-
-          if (ar.succeeded()) {
-            context.response().putHeader("Content-Type", "text/html");
-            context.response().end(ar.result());
-          } else {
-            context.fail(ar.cause());
-          }
-
-        });
+        ContextResponse.write(context, "/index.ftl");
 
       } else {
         context.fail(reply.cause());
@@ -84,12 +79,12 @@ public class DefaultAction implements Action {
           context.response().setStatusCode(400);
           // TODO should be going to error page
           //context.response().putHeader("Location", "/wiki/" + reply.result());
+
+          context.response().end();
         } else {
-          context.response().setStatusCode(301);
-          context.response().putHeader("Location", "/wiki/" + reply.result());
+          ContextResponse.write(context, "/wiki/" + reply.result(), reply.result(), 301);
         }
 
-        context.response().end();
 
       } else {
         context.fail(reply.cause());
@@ -101,10 +96,7 @@ public class DefaultAction implements Action {
 
       if (reply.succeeded()) {
 
-        context.response().setStatusCode(301);
-        context.response().putHeader("Location", "/wiki/" + _page_id);
-
-        context.response().end();
+        ContextResponse.write(context, "/wiki/" + _page_id, _page_id, 301);
 
       } else {
         context.fail(reply.cause());
@@ -126,15 +118,11 @@ public class DefaultAction implements Action {
   public void pageDeletionHandler(RoutingContext context) {
 
     Long id = Long.parseLong(context.request().getParam("id"));
-    JsonObject request = new JsonObject().put("id", id);
-    DeliveryOptions options = new DeliveryOptions().addHeader("action", "delete-page");
 
     dbService.deletePage(id, reply -> {
 
       if (reply.succeeded()) {
-        context.response().setStatusCode( 301 );
-        context.response().putHeader("Location", "/");
-        context.response().end(id + "");
+        ContextResponse.write(context, "/", id, 301);
       } else {
         context.fail(reply.cause());
       }
@@ -148,36 +136,15 @@ public class DefaultAction implements Action {
 
     String pageName = context.request().getParam("name");
 
-    if (pageName == null || pageName.isEmpty()) {
-      context.response().setStatusCode(400);
-      context.response().putHeader("Location", "/");
-      context.response().end();
-    } else {
+    dbService.createPage(pageName, EMPTY_PAGE_MARKDOWN, reply -> {
 
-      dbService.createPage(pageName, EMPTY_PAGE_MARKDOWN, reply -> {
+      if (reply.succeeded()) {
+        ContextResponse.write(context, "/wiki/" + (long) reply.result(), (long) reply.result(), 301);
+      } else {
+        context.fail(reply.cause());
+      }
 
-        Long newPageId = -1L;
-
-        if (reply.succeeded()) {
-
-          if (reply.result() == null) {
-            context.response().putHeader("Location", "/");
-          } else {
-            newPageId = (long) reply.result();
-            context.response().putHeader("Location", "/wiki/" + newPageId);
-          }
-
-          context.response().setStatusCode(301);
-
-          context.response().end(newPageId + "");
-
-        } else {
-          context.fail(reply.cause());
-        }
-
-      });
-
-    }
+    });
 
   }
 
@@ -195,36 +162,21 @@ public class DefaultAction implements Action {
         boolean found = body.getBoolean("found");
         String rawContent = body.getString("rawContent", EMPTY_PAGE_MARKDOWN);
 
+        context.put("newPage", found ? "no" : "yes");
+        context.put("timestamp", new Date().toString());
+
         if (found) {
+
           context.put("id", body.getInteger("id"));
           context.put("title", body.getString("title"));
           context.put("content", Processor.process(rawContent));
           context.put("rawContent", rawContent);
+
+          ContextResponse.write(context, "/pages/page_detail.ftl");
         } else {
 
-//          context.put("id", -1);
-//          context.put("title", "");
-//          context.put("content", Processor.process(EMPTY_PAGE_MARKDOWN));
-//          context.put("rawContent", EMPTY_PAGE_MARKDOWN);
-
-          context.response().setStatusCode(404);
-          context.response().end();
-          return;
+          ContextResponse.write(context, "/pages/page_detail.ftl", 404);
         }
-
-        context.put("newPage", found ? "no" : "yes");
-        context.put("timestamp", new Date().toString());
-
-        templateEngine.render(context, "templates", "/pages/page_detail.ftl", ar -> {
-
-          if (ar.succeeded()) {
-            context.response().putHeader("Content-Type", "text/html");
-            context.response().end(ar.result());
-          } else {
-            context.fail(ar.cause());
-          }
-
-        });
 
       } else {
         context.fail(reply.cause());
@@ -234,6 +186,84 @@ public class DefaultAction implements Action {
     });
 
   }
+
+  @Override
+  public void backupHandler(RoutingContext context) {
+
+    dbService.fetchAllPagesData(reply -> {
+
+      if (!reply.succeeded()) {
+        context.fail(reply.cause());
+      } else {
+
+        JsonObject filesListObject = new JsonObject();
+
+        reply
+          .result()
+          .forEach(page -> {
+
+            filesListObject.put(page.getString("NAME"),
+                  new JsonObject().put("content", page.getString("CONTENT")));
+
+          });
+
+
+        JsonObject gistPayload = new JsonObject()
+              .put("files", filesListObject)
+              .put("description", "A wiki backup")
+              .put("public", true);
+
+        WebClient webClient = WebClient.create(_vertx,
+              new WebClientOptions().setSsl(true).setUserAgent("vert-x3"));
+
+        webClient.post(443, "api.github.com", "/gists")
+          .putHeader("Accept", "application/vnd.github.v3+json")
+          .putHeader("Content-Type", "application/json")
+          .as(BodyCodec.jsonObject())
+          .sendJsonObject(gistPayload, ar -> {
+
+          if (ar.succeeded()) {
+
+            HttpResponse<JsonObject> response = ar.result();
+
+            if (response.statusCode() == 201) {
+
+              context.put("backup_gist_url", response.body().getString("html_url"));
+
+              System.out.println(context.get("backup_gist_url") + " , backup_gist_url 777");
+              indexHandler(context);
+
+            } else {
+
+              StringBuilder message = new StringBuilder()
+                .append("Could not backup the wiki: ")
+                .append(response.statusMessage());
+
+              JsonObject body = response.body();
+
+              if (body != null) {
+                message.append(System.getProperty("line.separator")).append(body.encodePrettily());
+              }  {
+                LOGGER.error(message.toString());
+                context.fail(502);
+              }
+
+            }
+
+          } else {
+
+            LOGGER.error("Vert.x HTTP Client error", ar.cause());
+            context.fail(ar.cause());
+          }
+
+        });
+
+      }
+
+    });
+
+  }
+
 
   @Override
   public Vertx getVertx() {

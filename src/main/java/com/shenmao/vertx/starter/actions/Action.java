@@ -13,6 +13,8 @@ public interface Action {
   public void pageDeletionHandler(RoutingContext context);
   public void pageCreateHandler(RoutingContext context);
   public void pageRenderingHandler(RoutingContext context);
+  public void backupHandler(RoutingContext context);
+
   public Vertx getVertx();
 
 }

@@ -27,12 +27,37 @@ public class VertxRouter {
 
     router.get("/static/*").handler(_action::staticHandler);
 
-    router.get("/").handler(_action::indexHandler);
+    router.get("/").handler(rc -> {
+      rc.response().setStatusCode(303);
+      rc.response().putHeader("Location", "/index");
+      rc.response().end();
+    });
+
+//    router.get("/index").handler(_action::indexHandler);
+    router.routeWithRegex("/index(.json|.html|.xml)?").handler(_action::indexHandler);
+//    router.get("/index.html").handler(_action::indexHandler);
     router.get("/wiki/:id").handler(_action::pageRenderingHandler);
     router.post().handler(BodyHandler.create());
     router.post("/save").handler(_action::pageUpdateHandler);
     router.post("/create").handler(_action::pageCreateHandler);
     router.post("/delete").handler(_action::pageDeletionHandler);
+    router.get("/backup").handler(_action::backupHandler);
+
+
+    /*Router apiRouter = Router.router(_action.getVertx());
+    apiRouter.get("/pages").handler(this::apiRoot);
+    apiRouter.get("/pages/:id").handler(this::apiGetPage);
+    apiRouter.post().handler(BodyHandler.create());
+    apiRouter.post("/pages").handler(this::apiCreatePage);
+    apiRouter.put().handler(BodyHandler.create());
+    apiRouter.put("/pages/:id").handler(this::apiUpdatePage);
+    apiRouter.delete("/pages/:id").handler(this::apiDeletePage);
+
+    router.mountSubRouter("/api", apiRouter);
+    */
+
+
+
     router.get("/jsontest").handler(rc -> {
 
       JsonArray array = new JsonArray();

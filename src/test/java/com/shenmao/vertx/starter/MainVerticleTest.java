@@ -11,12 +11,14 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 
+import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.client.WebClientOptions;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -59,7 +61,7 @@ public class MainVerticleTest {
 
     Async async = tc.async();
 
-    _httpClient.getNow(_PORT, _HOST, "/", response -> {
+    _httpClient.getNow(_PORT, _HOST, "/index", response -> {
       tc.assertEquals(response.statusCode(), 200);
       response.bodyHandler(body -> {
         tc.assertTrue(body.length() > 0);
@@ -171,6 +173,43 @@ public class MainVerticleTest {
     async.complete();
 
 
+  }
+
+  @Test
+  public void start_http_server(TestContext context) { Async async = context.async();
+
+    vertx.createHttpServer().requestHandler(req ->
+
+      req.response().putHeader("Content-Type", "text/plain").end("Ok"))
+
+      .listen(_PORT, context.asyncAssertSuccess(server -> {
+
+        WebClient webClient = WebClient.create(vertx);
+
+//        WebClient webClient = WebClient.create(vertx,
+//              new WebClientOptions().setSsl(true).setUserAgent("vert-x3"));
+
+        webClient.get(_PORT, _HOST, "/").send(ar -> {
+
+          if (ar.succeeded()) {
+
+            HttpResponse<io.vertx.core.buffer.Buffer> response = ar.result();
+
+            context.assertTrue(response.headers().contains("Content-Type"));
+            context.assertEquals("text/html", response.getHeader("Content-Type"));
+            context.assertFalse(response.body().toString().isEmpty());
+
+            webClient.close();
+
+            async.complete();
+
+          } else {
+            async.resolve(Future.failedFuture(ar.cause()));
+          }
+
+        });
+
+      }));
   }
 
 
