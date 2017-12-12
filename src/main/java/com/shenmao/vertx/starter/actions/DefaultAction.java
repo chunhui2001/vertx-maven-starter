@@ -19,6 +19,8 @@ import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.ext.web.templ.FreeMarkerTemplateEngine;
 
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.shenmao.vertx.starter.database.WikiDatabaseVerticle.EMPTY_PAGE_MARKDOWN;
 
@@ -46,7 +48,7 @@ public class DefaultAction implements Action {
       if (reply.succeeded()) {
 
         context.put("title", "Wiki Home");
-        context.put("pages", reply.result());
+        context.put("content", reply.result());
 
         ContextResponse.write(context, "/index.ftl");
 
@@ -190,22 +192,13 @@ public class DefaultAction implements Action {
   @Override
   public void backupHandler(RoutingContext context) {
 
-    dbService.fetchAllPagesData(reply -> {
+    dbService.fetchAllPages(reply -> {
 
       if (!reply.succeeded()) {
         context.fail(reply.cause());
       } else {
 
         JsonObject filesListObject = new JsonObject();
-
-        reply
-          .result()
-          .forEach(page -> {
-
-            filesListObject.put(page.getString("NAME"),
-                  new JsonObject().put("content", page.getString("CONTENT")));
-
-          });
 
 
         JsonObject gistPayload = new JsonObject()

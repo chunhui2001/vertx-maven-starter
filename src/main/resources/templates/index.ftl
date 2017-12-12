@@ -19,15 +19,15 @@
 
   <div class="col-md-12 mt-1">
 
-    <#list context.pages>
+    <#list context.content>
       <h2 style="font-size: 1.5em;
     font-style: italic;
     color: gray;">Pages:</h2>
       <ul>
         <#items as page>
-        <li><a href="/wiki/${page[0]}">${page[1]}, </a>
+        <li><a href="/wiki/${page["id"]}">${page["name"]}, </a>
           <br />
-          <span style="color: goldenrod;">${page[2]}</span></li>
+          <span style="color: goldenrod;">${page["content"]}</span></li>
         </#items>
       </ul>
       <#else>

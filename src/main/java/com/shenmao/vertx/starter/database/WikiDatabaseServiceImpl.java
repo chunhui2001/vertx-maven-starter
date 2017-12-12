@@ -11,8 +11,10 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.jdbc.JDBCClient;
 import io.vertx.ext.sql.ResultSet;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class WikiDatabaseServiceImpl implements WikiDatabaseService {
 
@@ -39,20 +41,20 @@ public class WikiDatabaseServiceImpl implements WikiDatabaseService {
   }
 
   @Override
-  public WikiDatabaseService fetchAllPages(Handler<AsyncResult<List<JsonArray>>> resultHandler) {
+  public WikiDatabaseService fetchAllPages(Handler<AsyncResult<List<JsonObject>>> resultHandler) {
 
     jdbcClient.query(sqlQueries.get(SqlQueriesConfig.SqlQuery.ALL_PAGES), res -> {
 
       if (res.succeeded()) {
 
-//        List<String> pages = res.result()
-//          .getResults()
-//          .stream()
-//          .map(json -> json.getString(0))
-//          .sorted()
-//          .collect(Collectors.toList());
+        List<JsonObject> pages = res.result().getRows().stream()
+          .map(obj -> new JsonObject()
+            .put("id", obj.getInteger("ID"))
+            .put("name", obj.getString("NAME"))
+            .put("content", obj.getString("CONTENT")))
+          .collect(Collectors.toList());
 
-        resultHandler.handle(Future.succeededFuture(res.result().getResults()));
+        resultHandler.handle(Future.succeededFuture(pages));
       } else {
         LOGGER.error("Database query error", res.cause());
         resultHandler.handle(Future.failedFuture(res.cause()));
@@ -61,24 +63,6 @@ public class WikiDatabaseServiceImpl implements WikiDatabaseService {
     });
 
     return this;
-  }
-
-  @Override
-  public WikiDatabaseService fetchAllPagesData(Handler<AsyncResult<List<JsonObject>>> resultHandler) {
-
-    jdbcClient.query(sqlQueries.get(SqlQueriesConfig.SqlQuery.ALL_PAGES_DATA), queryResult -> {
-
-      if (queryResult.succeeded()) {
-        resultHandler.handle(Future.succeededFuture(queryResult.result().getRows()));
-      } else {
-        LOGGER.error("Database query error", queryResult.cause());
-        resultHandler.handle(Future.failedFuture(queryResult.cause()));
-      }
-
-    });
-
-    return this;
-
   }
 
 

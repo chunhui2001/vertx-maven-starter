@@ -27,10 +27,8 @@ public interface WikiDatabaseService {
 
 
     @Fluent
-  WikiDatabaseService fetchAllPages(Handler<AsyncResult<List<JsonArray>>> resultHandler);
+  WikiDatabaseService fetchAllPages(Handler<AsyncResult<List<JsonObject>>> resultHandler);
 
-  @Fluent
-  WikiDatabaseService fetchAllPagesData(Handler<AsyncResult<List<JsonObject>>> resultHandler);
 
   @Fluent
   WikiDatabaseService fetchPage(Long id, Handler<AsyncResult<JsonObject>> resultHandler);

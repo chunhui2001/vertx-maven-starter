@@ -2,8 +2,13 @@ package com.shenmao.vertx.starter.actions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shenmao.vertx.starter.commons.JsonToXMLConverter;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.templ.FreeMarkerTemplateEngine;
+
+import java.io.IOException;
+import java.util.List;
 
 public class ContextResponse {
 
@@ -23,15 +28,32 @@ public class ContextResponse {
 
   public static void write(RoutingContext context, String view) {
 
-    if (original(context.request().uri()).endsWith(".json")) {
+    if (original(context.request().uri()).endsWith(".json") || original(context.request().uri()).endsWith(".xml")) {
 
-      context.response().putHeader("Content-Type", "application/json");
 
-      try {
-        context.response().end(new ObjectMapper().writeValueAsString(context.get("pages")));
-      } catch (JsonProcessingException e) {
-        e.printStackTrace();
+      JsonObject response = new JsonObject()
+        .put("success", true) .put("contents", (List<JsonObject>)context.get("content"));
+
+
+      String result = response.encode();
+
+      if (original(context.request().uri()).endsWith(".xml")) {
+
+        context.response().putHeader("Content-Type", "application/xml");
+
+        try {
+          result = new JsonToXMLConverter().convertJsonToXml(result);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+
+      } else {
+
+        context.response().putHeader("Content-Type", "application/json");
       }
+
+
+      context.response().end(result);
 
       return;
 
