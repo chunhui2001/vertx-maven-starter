@@ -59,6 +59,8 @@ public class ContextResponse {
 
     }
 
+    context.put("username", context.user() != null ? context.user().principal().getString("username") : "anonymous user");
+
     templateEngine.render(context, templateFolderName, view, ar -> {
 
       if (ar.succeeded()) {

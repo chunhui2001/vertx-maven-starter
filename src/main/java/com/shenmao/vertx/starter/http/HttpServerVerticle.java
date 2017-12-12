@@ -7,8 +7,13 @@ import com.shenmao.vertx.starter.routers.VertxRouter;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.auth.AuthProvider;
+import io.vertx.ext.auth.shiro.ShiroAuth;
+import io.vertx.ext.auth.shiro.ShiroAuthOptions;
+import io.vertx.ext.auth.shiro.ShiroAuthRealmType;
 import io.vertx.ext.web.Router;
 
 public class HttpServerVerticle extends AbstractVerticle {
@@ -21,9 +26,10 @@ public class HttpServerVerticle extends AbstractVerticle {
 
     HttpServer server = vertx.createHttpServer();
 
-    Router router = new VertxRouter(new DefaultAction(vertx)).getRouter();
+    Router router = new VertxRouter(vertx).getRouter();
 
     int portNumber = Integer.parseInt(Application.getAppConfig().get(ApplicationConfig.AppConfig.APP_PORT));
+
 
     server
       .requestHandler(router::accept)

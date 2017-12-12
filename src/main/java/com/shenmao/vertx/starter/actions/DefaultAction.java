@@ -27,8 +27,7 @@ import static com.shenmao.vertx.starter.database.WikiDatabaseVerticle.EMPTY_PAGE
 public class DefaultAction implements Action {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAction.class);
-  private final FreeMarkerTemplateEngine templateEngine = FreeMarkerTemplateEngine.create();
-  private String wikiDbQueue = WikiDatabaseVerticle.CONFIG_WIKIDB_QUEUE;
+  private static final String wikiDbQueue = WikiDatabaseVerticle.CONFIG_WIKIDB_QUEUE;
 
 
   private WikiDatabaseService dbService;
@@ -43,20 +42,28 @@ public class DefaultAction implements Action {
   @Override
   public void indexHandler(RoutingContext context) {
 
-    dbService.fetchAllPages(reply -> {
 
-      if (reply.succeeded()) {
+    context.user().isAuthorized("create", res -> {
 
-        context.put("title", "Wiki Home");
-        context.put("content", reply.result());
+      dbService.fetchAllPages(reply -> {
 
-        ContextResponse.write(context, "/index.ftl");
+        if (reply.succeeded()) {
 
-      } else {
-        context.fail(reply.cause());
-      }
+          context.put("title", "Wiki Home");
+          context.put("content", reply.result());
+          context.put("canCreatePage", res.succeeded() && res.result());
+
+          ContextResponse.write(context, "/index.ftl");
+
+        } else {
+          context.fail(reply.cause());
+        }
+
+      });
+
 
     });
+
 
 
   }

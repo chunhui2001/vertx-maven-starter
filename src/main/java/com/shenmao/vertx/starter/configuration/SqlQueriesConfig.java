@@ -50,6 +50,7 @@ public class SqlQueriesConfig {
 
       queriesInputStream = getClass().getResourceAsStream(configfile);
 
+
       queriesProps = new Properties();
       queriesProps.load(queriesInputStream);
       queriesInputStream.close();

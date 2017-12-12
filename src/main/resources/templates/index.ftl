@@ -1,8 +1,10 @@
 <#include "header.ftl">
+
 <div class="row">
 
   <div class="col-md-12 mt-1" style="margin-top: 1em !important;">
 
+  <#if context.canCreatePage>
     <div class="float-xs-right">
       <form class="form-inline" action="/create" method="post">
 
@@ -10,9 +12,10 @@
           <input type="text" class="form-control" id="name" name="name" placeholder="New page name">
         </div>
 
-          <button type="submit" class="btn btn-primary" style="margin-left: .8em;">Create</button>
+        <button type="submit" class="btn btn-primary" style="margin-left: .8em;">Create</button>
       </form>
     </div>
+  </#if>
 
     <h2 class="display-4" style="margin-top: .6em;font-size: 2em;">${context.title}</h2>
   </div>
