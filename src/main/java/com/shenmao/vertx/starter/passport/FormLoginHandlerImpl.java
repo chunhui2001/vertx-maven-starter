@@ -64,15 +64,15 @@ public class FormLoginHandlerImpl implements FormLoginHandler {
       String username = params.get(this.usernameParam);
       String password = params.get(this.passwordParam);
 
-      System.out.println(1);
       if (username != null && password != null) {
-        System.out.println(2);
+
         Session session = context.session();
         JsonObject authInfo = (new JsonObject()).put("username", username).put("password", password);
+
         this.authProvider.authenticate(authInfo, (res) -> {
-          System.out.println(3);
+
           if (res.succeeded()) {
-            System.out.println(4);
+
             User user = (User)res.result();
             context.setUser(user);
 
@@ -80,8 +80,6 @@ public class FormLoginHandlerImpl implements FormLoginHandler {
 
               session.regenerateId();
               String returnURL = (String)session.remove(this.returnURLParam);
-
-              System.out.println(returnURL + ", returnURL");
 
               if (returnURL != null) {
                 this.doRedirect(req.response(), returnURL);
@@ -95,15 +93,11 @@ public class FormLoginHandlerImpl implements FormLoginHandler {
               req.response().end(DEFAULT_DIRECT_LOGGED_IN_OK_PAGE);
             }
           } else {
-
-            System.out.println(5);
             this.doRedirect(req.response(), "/login?error", 302);
           }
 
         });
       } else {
-
-        System.out.println(6);
         log.warn("No username or password provided in form - did you forget to include a BodyHandler?");
         context.fail(400);
       }

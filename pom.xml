@@ -89,9 +89,22 @@
       <artifactId>vertx-web-client</artifactId>
     </dependency>
 
+    <!-- auth -->
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-auth-shiro</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-auth-jwt</artifactId>
+    </dependency>
+
+    <!-- base64 decode -->
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.11</version>
     </dependency>
 
 

@@ -2,10 +2,17 @@ package com.shenmao.vertx.starter.actions;
 
 import com.shenmao.vertx.starter.database.WikiDatabaseService;
 import com.shenmao.vertx.starter.database.WikiDatabaseVerticle;
+import com.shenmao.vertx.starter.passport.JWTAuthenticated;
+import com.shenmao.vertx.starter.passport.ShiroAuthenticate;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.auth.AuthProvider;
+import io.vertx.ext.auth.User;
+import io.vertx.ext.auth.jwt.JWTOptions;
 import io.vertx.ext.web.RoutingContext;
+import org.apache.commons.codec.binary.Base64;
 
 public class NormalAction {
 
@@ -37,6 +44,73 @@ public class NormalAction {
 
     ContextResponse.write(context, "/login.ftl");
 
+
+  }
+
+  public void accessTokenHandler(RoutingContext context) {
+
+    // curl -v -u zch:zch http://localhost:9180/access_token
+    // curl -k -u zch:zch https://localhost:9180/access_token # ssl
+    // http --auth zch:zch --auth-type basic --verbose --verify no GET https://localhost:9180/access_token
+
+    final String _authString = context.request().getHeader("Authorization");
+    final String _base64AuthStr = _authString == null || _authString.isEmpty() ? "" : _authString.split(" ")[1];
+
+    if (_authString == null || _authString.isEmpty()
+      || !_authString.split(" ")[0].equals("Basic")
+      || !Base64.isBase64(_base64AuthStr)) {
+      context.fail(401);
+      return;
+    }
+
+
+
+    final String _usernameAndPasswd = new String(Base64.decodeBase64(_base64AuthStr));
+
+    System.out.println(_usernameAndPasswd + ", _usernameAndPasswd");
+
+    JsonObject creds = new JsonObject()
+      .put("username", _usernameAndPasswd.split(":")[0])
+      .put("password", _usernameAndPasswd.split(":")[1]);
+
+    AuthProvider auth = ShiroAuthenticate.newInstance(_vertx);
+
+    auth.authenticate(creds, authResult -> {
+
+
+      if (authResult.succeeded()) {
+
+        User user = authResult.result();
+
+        user.isAuthorized("create", canCreate -> {
+
+          user.isAuthorized("delete", canDelete -> {
+
+            user.isAuthorized("update", canUpdate -> {
+
+              String token = JWTAuthenticated.newInstance(_vertx).generateToken(
+                    new JsonObject()
+                      .put("username", context.request().getHeader("login"))
+                      .put("canCreate", canCreate.succeeded() && canCreate.result())
+                      .put("canDelete", canDelete.succeeded() && canDelete.result())
+                      .put("canUpdate", canUpdate.succeeded() && canUpdate.result()),
+                      new JWTOptions() .setSubject("Wiki API") .setIssuer("Vert.x")
+              );
+
+//              String token = " hhh";
+
+                context.response().putHeader("Content-Type", "text/plain").end(token);
+            });
+
+          });
+
+        });
+
+      } else {
+        context.fail(401);
+      }
+
+    });
 
   }
 

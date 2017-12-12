@@ -1,19 +1,15 @@
 package com.shenmao.vertx.starter.http;
 
 import com.shenmao.vertx.starter.Application;
-import com.shenmao.vertx.starter.actions.DefaultAction;
 import com.shenmao.vertx.starter.configuration.ApplicationConfig;
 import com.shenmao.vertx.starter.routers.VertxRouter;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.json.JsonObject;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.auth.AuthProvider;
-import io.vertx.ext.auth.shiro.ShiroAuth;
-import io.vertx.ext.auth.shiro.ShiroAuthOptions;
-import io.vertx.ext.auth.shiro.ShiroAuthRealmType;
+import io.vertx.core.net.JksOptions;
 import io.vertx.ext.web.Router;
 
 public class HttpServerVerticle extends AbstractVerticle {
@@ -24,7 +20,17 @@ public class HttpServerVerticle extends AbstractVerticle {
   @Override
   public void start(Future<Void> startFuture) throws Exception {
 
-    HttpServer server = vertx.createHttpServer();
+//    HttpServer server = vertx.createHttpServer();
+
+    HttpServer server = vertx.createHttpServer(new HttpServerOptions() .setSsl(true)
+      .setKeyStoreOptions(new JksOptions()
+        .setPath("ssh_keys/server-keystore.jks")
+        .setPassword("secret")));
+
+//    webClient = WebClient.create(vertx, new WebClientOptions() .setDefaultHost("localhost")
+//      .setDefaultPort(8080)
+//      .setSsl(true) 1
+//      .setTrustOptions(new JksOptions().setPath("server-keystore.jks").setPassword("secret")));
 
     Router router = new VertxRouter(vertx).getRouter();
 
