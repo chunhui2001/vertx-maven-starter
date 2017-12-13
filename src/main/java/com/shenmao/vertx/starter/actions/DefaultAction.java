@@ -3,6 +3,7 @@ package com.shenmao.vertx.starter.actions;
 import com.github.rjeschke.txtmark.Processor;
 import com.shenmao.vertx.starter.database.WikiDatabaseService;
 import com.shenmao.vertx.starter.database.WikiDatabaseVerticle;
+import com.shenmao.vertx.starter.passport.ShiroRealm;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -43,7 +44,7 @@ public class DefaultAction implements Action {
   public void indexHandler(RoutingContext context) {
 
 
-    context.user().isAuthorized("create", res -> {
+    context.user().isAuthorized(ShiroRealm.Permission.CREATE.toString(),res -> {
 
       dbService.fetchAllPages(reply -> {
 

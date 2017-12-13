@@ -21,8 +21,15 @@ import io.vertx.ext.web.handler.*;
 import com.shenmao.vertx.starter.passport.FormLoginHandlerImpl;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.authc.AuthenticationInfo;
+import org.apache.shiro.authc.AuthenticationToken;
+import org.apache.shiro.authz.AuthorizationInfo;
+import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.mgt.DefaultSecurityManager;
+import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.realm.Realm;
+import org.apache.shiro.subject.PrincipalCollection;
 
 
 public class VertxRouter {
@@ -48,9 +55,6 @@ public class VertxRouter {
 
     _authHandler = RedirectAuthHandler.create(_shiroAuth, "/login");
 
-//    Realm realm = null;
-//    DefaultSecurityManager securityManager = new DefaultSecurityManager(realm);
-//    SecurityUtils.setSecurityManager(securityManager);
 
   }
 
