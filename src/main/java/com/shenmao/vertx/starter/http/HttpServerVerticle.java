@@ -20,12 +20,12 @@ public class HttpServerVerticle extends AbstractVerticle {
   @Override
   public void start(Future<Void> startFuture) throws Exception {
 
-//    HttpServer server = vertx.createHttpServer();
+    HttpServer server = vertx.createHttpServer();
 
-    HttpServer server = vertx.createHttpServer(new HttpServerOptions() .setSsl(true)
-      .setKeyStoreOptions(new JksOptions()
-        .setPath("ssh_keys/server-keystore.jks")
-        .setPassword("secret")));
+//    HttpServer server = vertx.createHttpServer(new HttpServerOptions() .setSsl(true)
+//      .setKeyStoreOptions(new JksOptions()
+//        .setPath("ssh_keys/server-keystore.jks")
+//        .setPassword("secret")));
 
 //    webClient = WebClient.create(vertx, new WebClientOptions() .setDefaultHost("localhost")
 //      .setDefaultPort(8080)

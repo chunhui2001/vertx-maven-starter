@@ -10,6 +10,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.auth.AuthProvider;
 import io.vertx.ext.auth.User;
+import io.vertx.ext.auth.jwt.JWTAuth;
 import io.vertx.ext.auth.jwt.JWTOptions;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.commons.codec.binary.Base64;
@@ -67,8 +68,6 @@ public class NormalAction {
 
     final String _usernameAndPasswd = new String(Base64.decodeBase64(_base64AuthStr));
 
-    System.out.println(_usernameAndPasswd + ", _usernameAndPasswd");
-
     JsonObject creds = new JsonObject()
       .put("username", _usernameAndPasswd.split(":")[0])
       .put("password", _usernameAndPasswd.split(":")[1]);
@@ -76,7 +75,6 @@ public class NormalAction {
     AuthProvider auth = ShiroAuthenticate.newInstance(_vertx);
 
     auth.authenticate(creds, authResult -> {
-
 
       if (authResult.succeeded()) {
 
@@ -88,16 +86,14 @@ public class NormalAction {
 
             user.isAuthorized("update", canUpdate -> {
 
-              String token = JWTAuthenticated.newInstance(_vertx).generateToken(
+              String token = JWTAuthenticated.jwtAuth().generateToken(
                     new JsonObject()
-                      .put("username", context.request().getHeader("login"))
+                      .put("username", _usernameAndPasswd.split(":")[0])
                       .put("canCreate", canCreate.succeeded() && canCreate.result())
                       .put("canDelete", canDelete.succeeded() && canDelete.result())
                       .put("canUpdate", canUpdate.succeeded() && canUpdate.result()),
                       new JWTOptions() .setSubject("Wiki API") .setIssuer("Vert.x")
               );
-
-//              String token = " hhh";
 
                 context.response().putHeader("Content-Type", "text/plain").end(token);
             });
@@ -107,6 +103,7 @@ public class NormalAction {
         });
 
       } else {
+        System.out.println("authenticate failed!");
         context.fail(401);
       }
 

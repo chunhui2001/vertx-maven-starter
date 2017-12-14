@@ -1,0 +1,177 @@
+package com.shenmao.vertx.starter.passport;
+
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.file.FileSystemException;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.KeyStoreOptions;
+import io.vertx.ext.auth.PubSecKeyOptions;
+import io.vertx.ext.auth.SecretOptions;
+import io.vertx.ext.auth.User;
+import io.vertx.ext.auth.jwt.JWTAuth;
+import io.vertx.ext.auth.jwt.JWTAuthOptions;
+import io.vertx.ext.auth.jwt.JWTOptions;
+import io.vertx.ext.auth.jwt.impl.JWTUser;
+import io.vertx.ext.jwt.JWT;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.util.Collections;
+import java.util.List;
+
+public class JWTAuthProviderImpl implements JWTAuth {
+
+  private static final JsonArray EMPTY_ARRAY = new JsonArray();
+
+  private final JWT jwt;
+
+  private final String permissionsClaimKey;
+  private final String issuer;
+  private final List<String> audience;
+  private final boolean ignoreExpiration;
+  private final int leeway;
+
+  public JWTAuthProviderImpl(Vertx vertx, JWTAuthOptions config) {
+    this.permissionsClaimKey = config.getPermissionsClaimKey();
+    this.issuer = config.getIssuer();
+    this.audience = config.getAudience();
+    this.ignoreExpiration = config.isIgnoreExpiration();
+    this.leeway = config.getLeeway();
+
+    final KeyStoreOptions keyStore = config.getKeyStore();
+
+    // attempt to load a Key file
+    try {
+      if (keyStore != null) {
+        KeyStore ks = KeyStore.getInstance(keyStore.getType());
+
+        // synchronize on the class to avoid the case where multiple file accesses will overlap
+        synchronized (io.vertx.ext.auth.jwt.impl.JWTAuthProviderImpl.class) {
+          final Buffer keystore = vertx.fileSystem().readFileBlocking(keyStore.getPath());
+
+          try (InputStream in = new ByteArrayInputStream(keystore.getBytes())) {
+            ks.load(in, keyStore.getPassword().toCharArray());
+          }
+        }
+
+        this.jwt = new JWT(ks, keyStore.getPassword().toCharArray());
+      } else {
+        // no key file attempt to load pem keys
+        this.jwt = new JWT();
+
+        final List<PubSecKeyOptions> keys = config.getPubSecKeys();
+
+        if (keys != null) {
+          for (PubSecKeyOptions key : keys) {
+            this.jwt.addKeyPair(key.getType(), key.getPublicKey(), key.getSecretKey());
+          }
+        }
+
+        final List<SecretOptions> secrets = config.getSecrets();
+
+        if (secrets != null) {
+          for (SecretOptions secret: secrets) {
+            this.jwt.addSecret(secret.getType(), secret.getSecret());
+          }
+        }
+      }
+
+    } catch (KeyStoreException | IOException | FileSystemException | CertificateException | NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void authenticate(JsonObject authInfo, Handler<AsyncResult<User>> resultHandler) {
+    try {
+      final JsonObject payload = jwt.decode(authInfo.getString("jwt"));
+
+      // All dates in JWT are of type NumericDate
+      // a NumericDate is: numeric value representing the number of seconds from 1970-01-01T00:00:00Z UTC until
+      // the specified UTC date/time, ignoring leap seconds
+      final long now = (System.currentTimeMillis() / 1000);
+
+      if (payload.containsKey("exp") && !ignoreExpiration) {
+        if (now - leeway >= payload.getLong("exp")) {
+          resultHandler.handle(Future.failedFuture("Expired JWT token: exp <= now"));
+          return;
+        }
+      }
+
+      if (payload.containsKey("iat")) {
+        Long iat = payload.getLong("iat");
+        // issue at must be in the past
+        if (iat > now + leeway) {
+          resultHandler.handle(Future.failedFuture("Invalid JWT token: iat > now"));
+          return;
+        }
+      }
+
+      if (payload.containsKey("nbf")) {
+        Long nbf = payload.getLong("nbf");
+        // not before must be after now
+        if (nbf > now + leeway) {
+          resultHandler.handle(Future.failedFuture("Invalid JWT token: nbf > now"));
+          return;
+        }
+      }
+
+      if (audience != null) {
+        JsonArray target;
+        if (payload.getValue("aud") instanceof String) {
+          target = new JsonArray().add(payload.getValue("aud", ""));
+        } else {
+          target = payload.getJsonArray("aud", EMPTY_ARRAY);
+        }
+
+        if (Collections.disjoint(audience, target.getList())) {
+          resultHandler.handle(Future.failedFuture("Invalid JWT audient. expected: " + Json.encode(audience)));
+          return;
+        }
+      }
+
+      if (issuer != null) {
+        if (!issuer.equals(payload.getString("iss"))) {
+          resultHandler.handle(Future.failedFuture("Invalid JWT issuer"));
+          return;
+        }
+      }
+
+      resultHandler.handle(Future.succeededFuture(new JWTUser(payload, permissionsClaimKey)));
+
+    } catch (RuntimeException e) {
+      resultHandler.handle(Future.failedFuture(e));
+    }
+  }
+
+  @Override
+  public String generateToken(JsonObject claims, final JWTOptions options) {
+
+    System.out.println("generateToken 1");
+    final JsonObject jsonOptions = options.toJson();
+    final JsonObject _claims = claims.copy();
+
+    System.out.println("generateToken 2");
+    // we do some "enhancement" of the claims to support roles and permissions
+    if (jsonOptions.containsKey("permissions") && !_claims.containsKey(permissionsClaimKey)) {
+
+      System.out.println("generateToken 3");
+      _claims.put(permissionsClaimKey, jsonOptions.getJsonArray("permissions"));
+    }
+
+
+    System.out.println(_claims.encode() + ", generateToken 4");
+
+    return jwt.sign(_claims, jsonOptions);
+  }
+}
