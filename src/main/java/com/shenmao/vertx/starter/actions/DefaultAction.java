@@ -44,24 +44,40 @@ public class DefaultAction implements Action {
   public void indexHandler(RoutingContext context) {
 
 
-    context.user().isAuthorized(ShiroRealm.Permission.CREATE.toString(),res -> {
+//    context.user().isAuthorized(ShiroRealm.Permission.CREATE.toString(),res -> {
+//
+//      dbService.fetchAllPages(reply -> {
+//
+//        if (reply.succeeded()) {
+//
+//          context.put("title", "Wiki Home");
+//          context.put("content", reply.result());
+//          context.put("canCreatePage", res.succeeded() && res.result());
+//
+//          ContextResponse.write(context, "/index.ftl");
+//
+//        } else {
+//          context.fail(reply.cause());
+//        }
+//
+//      });
+//
+//
+//    });
 
-      dbService.fetchAllPages(reply -> {
+    dbService.fetchAllPages(reply -> {
 
-        if (reply.succeeded()) {
+      if (reply.succeeded()) {
 
-          context.put("title", "Wiki Home");
-          context.put("content", reply.result());
-          context.put("canCreatePage", res.succeeded() && res.result());
+        context.put("title", "Wiki Home");
+        context.put("content", reply.result());
+        context.put("canCreatePage", true);
 
-          ContextResponse.write(context, "/index.ftl");
+        ContextResponse.write(context, "/index.ftl");
 
-        } else {
-          context.fail(reply.cause());
-        }
-
-      });
-
+      } else {
+        context.fail(reply.cause());
+      }
 
     });
 
