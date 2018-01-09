@@ -1,4 +1,4 @@
-package io.vertx.starter;
+package com.shenmao.vertx.starter;
 
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
@@ -28,7 +28,7 @@ public class MainVerticleTest {
   @Test
   public void testThatTheServerIsStarted(TestContext tc) {
     Async async = tc.async();
-    vertx.createHttpClient().getNow(8080, "localhost", "/", response -> {
+    vertx.createHttpClient().getNow(8081, "localhost", "/", response -> {
       tc.assertEquals(response.statusCode(), 200);
       response.bodyHandler(body -> {
         tc.assertTrue(body.length() > 0);
