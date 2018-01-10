@@ -1,3 +1,6 @@
+vertx-starter.iml
+.idea
+
 target/
 pom.xml.tag
 pom.xml.releaseBackup
