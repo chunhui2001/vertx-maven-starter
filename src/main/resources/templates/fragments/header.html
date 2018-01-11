@@ -1,0 +1,9 @@
+
+<div class="header">
+  <a href="/">Index</a>
+  {{#if viewUser.isAuthenticated }}
+  <a href="/signout">Sign out ({{viewUser.username}})</a>
+  {{else}}
+  <a href="/login">Login</a>
+  {{/if}}
+</div>
