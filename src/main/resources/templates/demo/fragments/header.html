@@ -1,0 +1,9 @@
+
+<div class="header">
+  <a href="{{mount_dir}}/">Index</a>
+  {{#if viewUser.isAuthenticated }}
+  <a href="{{mount_dir}}/signout">Sign out ({{viewUser.username}})</a>
+  {{else}}
+  <a href="{{mount_dir}}/login">Login</a>
+  {{/if}}
+</div>
