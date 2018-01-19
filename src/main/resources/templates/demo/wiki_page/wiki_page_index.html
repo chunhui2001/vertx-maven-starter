@@ -1,0 +1,31 @@
+
+
+{{#partial "blocks/title"}}
+<title>Vert.x Wiki Page</title>
+{{/partial}}
+
+{{#partial "content" }}
+<h1>Wiki Page, {{viewData.length}}</h1>
+
+{{#compare viewData.length 'eq' 0 }}
+<div>
+  empty list
+</div>
+{{/compare}}
+
+{{#each viewData}}
+<div class="row">{{wiki_page_title}}</div>
+{{/each}}
+
+{{/partial}}
+
+
+
+{{#partial "blocks/script"}}
+<script type="text/javascript" id="r_1">
+
+</script>
+{{/partial}}
+
+
+{{> layouts/layout_default}}
