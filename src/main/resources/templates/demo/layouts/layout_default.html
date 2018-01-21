@@ -1,0 +1,56 @@
+<html lang="zh-CN">
+<head>
+  <base href="/">
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  {{#block "blocks/title"}}
+  <title>Title here</title>
+  {{/block}}
+  <meta name="description" content="The page description">
+  <meta name="keywords" content="The page keywords">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <!-- css reset -->
+  <!-- link media="all" type="text/css" rel="stylesheet" href="/assets/libs/normalize-7.0.0.css"-->
+
+  <style type="text/css">
+    input, input:hover, input:focus, input:active {
+      outline:0 !important;
+    }
+
+  </style>
+
+  {{#block "blocks/styles"}}
+  <style type="text/css">
+
+  </style>
+  {{/block}}
+
+</head>
+<body>
+
+
+  {{#block "fragments/header"}}
+  <h1>Title</h1>
+  {{/block}}
+
+  {{#block "content"}}
+  {{/block}}
+
+  {{#block "fragments/footer" }}
+  <span>Powered by Handlebars.java</span>
+  {{/block}}
+
+
+
+  <script src="/scripts/sockjs.js"></script>
+  <script src="/scripts/vertx-eventbus.js"></script>
+
+  {{#block "blocks/script"}}
+  <script type="text/javascript">
+
+  </script>
+  {{/block}}
+
+</body>
+</html>

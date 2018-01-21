@@ -1,0 +1,102 @@
+
+
+{{#partial "blocks/title"}}
+<title>Vert.x Chat Room</title>
+{{/partial}}
+
+
+
+{{#partial "content" }}
+<h1>Chat Room Page</h1>
+
+<div id="msg_chat_board" style="font-size: .8em;background-color: darkslateblue;color: aliceblue; padding: .3em;width: 380px;min-height: 300px;">
+
+</div>
+
+<div>
+  <input type="text" name="message" id="msg_chat_box" size="55" />
+  <input type="button" onclick="btnSendChatMessage('post', '{{mount_dir}}/chat-room/send-message', 'msg_chat_box', sentMessage)" value="Send" />
+</div>
+
+{{/partial}}
+
+
+
+{{#partial "blocks/script"}}
+<script type="text/javascript" id="r_1">
+
+  clearMessage ();
+
+  window.onload = function (ev) {
+
+    var eventBus = new EventBus('{{mount_dir}}/eventbus');
+
+    eventBus.onopen = function () {
+      eventBus.registerHandler('chat_room.' + 1, function (err , message) {
+        var result = typeof message.body == 'string' ? JSON.parse(message.body).data : message.body.data;
+        console.log(message, 'receive a message');
+        displayMessage(result);
+
+      });
+    }
+
+
+  }
+
+  function displayMessage (result) {
+
+    var user = result.username;
+    var date_time = result.dateTime;
+
+    var message = "<div style='color: cadetblue;'><b>" + user + "</b> <em>" + date_time + "</em></div>" + "<div style='color: deeppink;margin-bottom: .3em;'>" + result.message + "</div>";
+
+    var allMessage = document.getElementById("msg_chat_board").innerHTML;
+    allMessage = allMessage + message;
+    document.getElementById("msg_chat_board").innerHTML = allMessage;
+  }
+
+  function clearMessage () {
+    document.getElementById("msg_chat_board").innerText = "";
+  }
+
+  function btnSendChatMessage(method, url, element_id, done) {
+
+
+    var chat_message = document.getElementById(element_id).value;
+
+    if (chat_message.trim().length == 0) return;
+
+    var xhr = new XMLHttpRequest();
+
+    xhr.onreadystatechange = function() {
+
+      if (xhr.readyState == 4) {
+        document.getElementById(element_id).value = "";
+        return done(null, xhr.responseText)
+      }
+
+    };
+
+    var data = {"message" : chat_message};
+    xhr.open(method, url, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.send(JSON.stringify(data));
+
+  }
+
+  function sentMessage( err, result) {
+
+    if (err){
+      console.error("send message failed");
+      return;
+    }
+
+
+
+  }
+
+</script>
+{{/partial}}
+
+
+{{> layouts/layout_default}}

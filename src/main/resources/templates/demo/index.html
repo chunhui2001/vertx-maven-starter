@@ -1,0 +1,30 @@
+{{#partial "blocks/title"}}
+<title>Vert.x Index Page</title>
+{{/partial}}
+
+{{#partial "content" }}
+<h1>Index Page {{mount_dir}}</h1>
+
+<a href='{{mount_dir}}/index'>Index (GET)</a> <br />
+<a href='{{mount_dir}}/ping'>Ping (POST)</a> <br />
+<a href='{{mount_dir}}/catalogue/products/电子/16075'>Catalogue (GET)</a> <br />
+<a href='{{mount_dir}}/articles/channel/big-data/vagrant.html'>Articles (GET, .json, .xml, .html)</a> <br />
+<a href='{{mount_dir}}/error' style="color:red;">Error Page (Illegal Access)</a> <br />
+<a href='{{mount_dir}}/throw'>Throw an exception purpose</a> <br />
+<a href='{{mount_dir}}/dashboard'>Dashboard</a> <br />
+<a href='{{mount_dir}}/chat-room'>Chat Room</a> <br />
+<a href='{{mount_dir}}/wiki-page'>Wiki Pages</a> <br />
+<a href='{{mount_dir}}/access_token'>Access Token (POST)</a> <br />
+
+{{/partial}}
+
+
+
+{{#partial "blocks/script"}}
+<script type="text/javascript" id="r_1">
+
+
+</script>
+{{/partial}}
+
+{{> layouts/layout_default}}
