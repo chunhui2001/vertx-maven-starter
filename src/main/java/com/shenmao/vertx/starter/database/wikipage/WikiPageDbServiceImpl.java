@@ -31,34 +31,36 @@ public class WikiPageDbServiceImpl implements WikiPageDbService {
     this.dbClient = dbClient;
     this.sqlQueriesWikiPages = sqlQueries;
 
-    dbClient.getConnection(ar -> {
-      if (ar.failed()) {
-        LOGGER.error("Could not open a database connection", ar.cause());
-        readyHandler.handle(Future.failedFuture(ar.cause()));
-      } else {
-        SQLConnection connection = ar.result();
-        connection.execute(sqlQueriesWikiPages.get(WikiSqlQuery.CREATE_WIKI_PAGES_TABLE), create -> {
-          connection.close();
-          if (create.failed()) {
-            LOGGER.error("Database preparation error", create.cause());
-            readyHandler.handle(Future.failedFuture(create.cause()));
-          } else {
-            readyHandler.handle(Future.succeededFuture(this));
-          }
-        });
-      }
+    this.createWikiPagesTable(voidAsyncResult -> {
+      readyHandler.handle(Future.succeededFuture(this));
     });
-
-//    this.createWikiPagesTable(voidAsyncResult -> {
-//
-//      System.out.println(2);
-//    });
 
 //    dbClient.rxGetConnection().flatMap(sqlConnection -> {
 //      Single<SQLConnection> connectionSingle = Single.just(sqlConnection);
 //      return connectionSingle.doOnUnsubscribe(sqlConnection::close);
 //    });
 
+  }
+
+  public void createWikiPagesTable(Handler<AsyncResult<Void>> resultHandler) {
+
+    dbClient.getConnection(ar -> {
+      if (ar.failed()) {
+        LOGGER.error("Could not open a database connection", ar.cause());
+        resultHandler.handle(Future.failedFuture(ar.cause()));
+      } else {
+        SQLConnection connection = ar.result();
+        connection.execute(sqlQueriesWikiPages.get(WikiSqlQuery.CREATE_WIKI_PAGES_TABLE), create -> {
+          connection.close();
+          if (create.succeeded())
+            resultHandler.handle(Future.succeededFuture());
+          else {
+            LOGGER.error("Database preparation error", Future.failedFuture(create.cause()));
+            resultHandler.handle(Future.failedFuture(create.cause()));
+          }
+        });
+      }
+    });
   }
 
 
@@ -104,31 +106,24 @@ public class WikiPageDbServiceImpl implements WikiPageDbService {
   @Override
   public WikiPageDbService fetchPage(String name, Handler<AsyncResult<JsonObject>> resultHandler) {
 
-    dbClient.queryWithParams(
 
-      sqlQueriesWikiPages.get(WikiSqlQuery.GET_WIKI_PAGE), new JsonArray().add(name), fetch -> {
-
-      if (fetch.succeeded()) {
-
+    dbClient.rxQueryWithParams(sqlQueriesWikiPages.get(WikiSqlQuery.GET_WIKI_PAGE), new JsonArray().add(name))
+      .map(a -> {
         JsonObject response = new JsonObject();
-        ResultSet resultSet = fetch.result();
+        List<JsonArray> resultSet = a.getResults();
 
-        if (resultSet.getNumRows() == 0) {
+        if (resultSet.size() == 0) {
           response.put("found", false);
         } else {
           response.put("found", true);
-          JsonArray row = resultSet.getResults().get(0);
+          JsonArray row = resultSet.get(0);
           response.put("wiki_page_id", row.getInteger(0));
           response.put("page_content", row.getString(1));
         }
 
-        resultHandler.handle(Future.succeededFuture(response));
-      } else {
-        LOGGER.error("Database query error", fetch.cause());
-        resultHandler.handle(Future.failedFuture(fetch.cause()));
-      }
+        return response;
+      }).subscribe(RxHelper.toSubscriber(resultHandler));
 
-    });
 
     return this;
   }

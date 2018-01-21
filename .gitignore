@@ -9,3 +9,7 @@ buildNumber.properties
 .mvn/timing.properties
 src/main/generated/
 db_wikipage/
+.idea/
+.vertx/
+vertx-starter.iml
+
