@@ -23,7 +23,7 @@ public class ConsumerMessageLoop extends Thread {
     Map<String, String> config = new HashMap<>();
     config.put("bootstrap.servers", "localhost:9092");
     config.put("group.id", "my_kafka_group");
-    config.put("auto.offset.reset", "earliest");
+    // config.put("auto.offset.reset", "earliest");
     config.put("enable.auto.commit", "false");
 
     this.vertx = vertx;

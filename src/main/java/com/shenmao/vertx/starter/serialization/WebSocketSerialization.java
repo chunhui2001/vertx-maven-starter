@@ -31,7 +31,7 @@ public class WebSocketSerialization {
     JsonObject data = JsonSerialization.getData(context, options);
     data.put("_ws_endpoint", _ws_endpoint);
 
-    KafkaProducerRecord<String, String> record = KafkaProducerRecord.create("VertxChatRoot", data.encodePrettily());
+    KafkaProducerRecord<String, String> record = KafkaProducerRecord.create("VertxChatRoot", "chatKey", data.encodePrettily());
 
     producer.write(record, done -> {
 
