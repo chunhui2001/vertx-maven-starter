@@ -84,6 +84,11 @@
       <artifactId>vertx-rx-java</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-kafka-client</artifactId>
+    </dependency>
+
     <!-- jdbc -->
     <dependency>
       <groupId>io.vertx</groupId>

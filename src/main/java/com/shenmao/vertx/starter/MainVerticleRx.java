@@ -5,8 +5,14 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.kafka.client.producer.KafkaProducer;
+import io.vertx.kafka.client.producer.KafkaProducerRecord;
+import io.vertx.kafka.client.producer.RecordMetadata;
 import io.vertx.rxjava.core.AbstractVerticle;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import rx.Single;
+
+import java.util.Properties;
 
 public class MainVerticleRx extends AbstractVerticle {
 
@@ -22,7 +28,7 @@ public class MainVerticleRx extends AbstractVerticle {
   private Single<String> startHttpServer() {
     return vertx.rxDeployVerticle(
       "com.shenmao.vertx.starter.verticle.demo.DemoVerticle",
-      new DeploymentOptions().setInstances(2));
+      new DeploymentOptions().setInstances(1));
   }
 
   @Override

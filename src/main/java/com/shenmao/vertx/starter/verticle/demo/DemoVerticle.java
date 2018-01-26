@@ -49,6 +49,12 @@ public class DemoVerticle extends AbstractVerticle {
 
   public Router vertxDemoRouter() {
 
+    System.out.println(2);
+    ConsumerMessageLoop.create(vertx, "VertxChatRoot").start();
+
+
+    System.out.println(3);
+
     Router router = DemoRouter.create(vertx, AuthHandlerImpl.create(vertx, DemoVerticle._MOUNT_DIR)).getRouter();
 
     vertx.exceptionHandler(new Handler<Throwable>() {
